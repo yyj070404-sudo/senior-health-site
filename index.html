@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>건강 동반자 · AI 시니어 헬스케어</title>
+<style>
+:root{--bg:#eef4f7;--card:#fff;--ink:#13293a;--mute:#4d6473;--acc:#0b5c7d;--onacc:#fff;--soft:#d9ebf3;--warn:#a3231a;--ok:#17703a;--line:#c5d6df;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1a22;--card:#16262f;--ink:#f0f6f9;--mute:#a7bcc7;--acc:#6cc6ea;--onacc:#06212d;--soft:#173646;--warn:#ff9a90;--ok:#7be09b;--line:#2c4350;color-scheme:dark}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:22px/1.6 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.7rem;line-height:1.3;margin:14px 0 6px}h2{font-size:1.4rem;margin:8px 0 12px}
+p{margin:6px 0}.mute{color:var(--mute);font-size:.85rem}
+button{font:inherit;cursor:pointer}
+.back{border:0;background:none;color:var(--acc);font-weight:700;padding:10px 0}
+.micbig{display:block;width:210px;height:210px;margin:22px auto;border-radius:50%;border:0;background:var(--acc);color:var(--onacc);font-size:1.3rem;font-weight:800;box-shadow:0 0 0 14px var(--soft)}
+.micbig span{display:block;font-size:4rem;line-height:1.1}
+.row{display:flex;align-items:center;gap:16px;width:100%;min-height:88px;margin:12px 0;padding:14px 18px;border:2px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font-weight:700;text-align:left}
+.row i{font-style:normal;font-size:2.2rem}.row small{display:block;font-weight:400;color:var(--mute);font-size:.8rem}
+.btn{min-height:64px;padding:12px 20px;border:0;border-radius:16px;background:var(--acc);color:var(--onacc);font-weight:800}
+.btn.alt{background:var(--card);color:var(--ink);border:2px solid var(--line)}.btn.ok{background:var(--ok);color:#fff}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.btns .btn{flex:1;min-width:140px}
+.msg{padding:12px 16px;border-radius:16px;margin:8px 0;max-width:92%}.msg.ai{background:var(--soft)}.msg.me{background:var(--acc);color:var(--onacc);margin-left:auto}
+.mic{display:block;width:120px;height:120px;border-radius:50%;margin:14px auto;border:0;background:var(--acc);color:var(--onacc);font-size:3rem}.mic.on{background:var(--warn);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}@media(prefers-reduced-motion:reduce){.mic.on{animation:none}}
+textarea{width:100%;font:inherit;border:2px solid var(--line);border-radius:14px;padding:12px;background:var(--card);color:var(--ink)}
+.urg{background:var(--warn);color:#fff;padding:14px 16px;border-radius:14px;font-weight:800;margin:10px 0}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.card b{display:block;color:var(--acc);font-size:.8rem;margin-top:8px}.v{padding:4px 8px;border-radius:8px;border:1px dashed var(--line);min-height:1.8em;white-space:pre-wrap}
+#cardbox.full{position:fixed;inset:0;z-index:9;background:var(--bg);overflow:auto;padding:18px;font-size:1.45rem}
+.slot{margin:16px 0}.slot h3{margin:0 0 6px;font-size:1.2rem;color:var(--acc)}
+.dose{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0}.dose.done{border-color:var(--ok)}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;background:var(--soft);font-size:.8rem;margin-right:6px}
+.remind{background:var(--acc);color:var(--onacc);padding:16px;border-radius:16px;font-weight:800;margin:10px 0}
+.note{margin-top:24px;padding:12px 14px;border-radius:12px;background:var(--soft);font-size:.78rem;color:var(--mute)}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<main>
+
+<section class="scr" id="s-home">
+  <h1>안녕하세요,<br>어디가 불편하세요?</h1>
+  <p class="mute">아래 큰 버튼을 누르고 말씀하세요. 글자를 쓰지 않아도 돼요.</p>
+  <button class="micbig" onclick="startTalk(true)"><span>🎤</span>말로 알려주기</button>
+  <button class="row" onclick="go('rx')"><i>📷</i><span>처방전 찍기<small>약 이름과 먹는 시간을 읽어 드려요</small></span></button>
+  <button class="row" onclick="go('meds')"><i>💊</i><span>오늘 먹을 약<small>먹었는지 확인해요</small></span></button>
+  <button class="row" onclick="go('card')"><i>📋</i><span>의사 선생님께 보여드릴 카드<small>내가 말한 증상을 정리했어요</small></span></button>
+</section>
+
+<section class="scr" id="s-talk" hidden>
+  <button class="back" onclick="stopTalk();go('home')">← 처음으로</button>
+  <div class="urg" id="urg" hidden>🚨 지금 119에 연락하거나 가까운 응급실로 가세요.</div>
+  <div id="chat"></div>
+  <button class="mic" id="mic" onclick="mic()" aria-label="말하기">🎤</button>
+  <textarea id="txt" rows="2" placeholder="말하기 어려우면 여기에 써도 돼요"></textarea>
+  <div class="btns"><button class="btn" id="sendb" onclick="send()">보내기</button><button class="btn alt" onclick="$('txt').value='어제부터 허리가 아프고 다리가 저려요.'">예시 문장 넣기</button></div>
+  <p class="mute" id="busy" hidden>생각하고 있어요…</p>
+</section>
+
+<section class="scr" id="s-card" hidden>
+  <button class="back" onclick="go('home')">← 처음으로</button>
+  <h2>의사 선생님께 보여드릴 카드</h2>
+  <div id="cardbox" class="card"></div>
+</section>
+
+<section class="scr" id="s-rx" hidden>
+  <button class="back" onclick="go('home')">← 처음으로</button>
+  <h2>처방전 읽기</h2>
+  <p>처방전이나 약 봉투를 밝은 곳에서 찍어 주세요.</p>
+  <label class="btn" style="display:block;text-align:center;line-height:40px" for="file">📷 사진 찍기 · 고르기</label>
+  <input type="file" id="file" accept="image/*" capture="environment" onchange="scan(this.files[0])">
+  <div class="btns"><button class="btn alt" onclick="showRx(SAMPLE)">예시 처방전으로 해보기</button></div>
+  <p class="mute" id="rxbusy" hidden>사진을 읽고 있어요… 잠시만 기다려 주세요.</p>
+  <div id="rxout"></div>
+</section>
+
+<section class="scr" id="s-meds" hidden>
+  <button class="back" onclick="go('home')">← 처음으로</button>
+  <h2>오늘 먹을 약</h2>
+  <div class="remind" id="remind" hidden></div>
+  <div id="medlist"></div>
+  <div class="btns"><button class="btn alt" onclick="remind(firstSlot()||'아침',true)">알림 시연하기</button></div>
+  <p class="mute">알림은 이 화면(앱)이 열려 있을 때 소리와 함께 알려 드려요.</p>
+</section>
+
+<p class="note">시연용 서비스입니다. 가상 환자·처방 정보로만 사용해 주세요. 이 서비스는 진단이나 처방을 하지 않으며, 약의 복용·중단·용량은 반드시 의사·약사와 상의하세요.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const S={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const TIMES={"아침":"08:00","점심":"12:30","저녁":"18:30","자기 전":"21:30"},SLOTS=Object.keys(TIMES);
+const URG=/가슴.*(아프|통증|답답|조이)|숨.*(차|막|못|가쁘)|의식|쓰러|마비|말이.*(어눌|안 나)|피를 (토|쏟)|심한 출혈/;
+const SAMPLE={readable:true,drugs:[{name:"예시 혈압약 5mg",dose:"1정",times:["아침"],timing:"식후",note:"예시 데이터"},{name:"예시 당뇨약 500mg",dose:"1정",times:["아침","저녁"],timing:"식후 30분",note:"예시 데이터"},{name:"예시 진통제 500mg",dose:"1정",times:["저녁","자기 전"],timing:"식후",note:"아플 때만"}],warnings:["예시 화면입니다. 실제 처방전이 아니에요."]};
+
+function go(n){document.querySelectorAll(".scr").forEach(s=>s.hidden=s.id!=="s-"+n);window.scrollTo(0,0);if(n==="card")renderCard();if(n==="meds")renderMeds()}
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="ko-KR";u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+async function api(body){const r=await fetch("/api/ai",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"오류가 났어요");return d}
+
+/* 음성 문진 */
+let hist=[],turns=0,rec=null;
+function startTalk(){hist=[];turns=0;$("chat").innerHTML="";$("txt").value="";$("urg").hidden=true;const q="어디가 불편하세요? 마이크를 누르고 말씀해 주세요.";addMsg("ai",q);say(q);go("talk")}
+function stopTalk(){try{if(rec)rec.stop();speechSynthesis.cancel()}catch(e){}}
+function addMsg(w,t){const d=document.createElement("div");d.className="msg "+w;d.textContent=t;$("chat").appendChild(d);d.scrollIntoView({block:"end"})}
+function mic(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("이 기기는 음성 인식을 지원하지 않아요. 아래 칸에 글자로 써 주세요. (크롬 브라우저를 권장해요)");return}
+ if(rec){rec.stop();return}rec=new SR();rec.lang="ko-KR";rec.interimResults=false;
+ rec.onresult=e=>{$("txt").value=e.results[0][0].transcript};rec.onerror=()=>{};
+ rec.onend=()=>{rec=null;$("mic").classList.remove("on");if($("txt").value.trim())send()};
+ $("mic").classList.add("on");try{speechSynthesis.cancel();rec.start()}catch(e){rec=null;$("mic").classList.remove("on")}}
+async function send(){const t=$("txt").value.trim();if(!t)return;$("txt").value="";
+ if(URG.test(t))$("urg").hidden=false;addMsg("me",t);hist.push({r:"user",t});turns++;
+ $("busy").hidden=false;$("sendb").disabled=true;
+ try{const d=await api({mode:"interview",history:hist,force:turns>=4});if(d.urgent){$("urg").textContent="🚨 "+d.urgent;$("urg").hidden=false}
+  if(d.done&&d.card){d.card.date=new Date().toLocaleString("ko-KR");S.set("card",d.card);const m="말씀을 정리해서 진료 카드를 만들었어요.";addMsg("ai",m);say(m);setTimeout(()=>go("card"),1200)}
+  else{hist.push({r:"ai",t:d.question});addMsg("ai",d.question);say(d.question)}}
+ catch(e){addMsg("ai","잠시 문제가 생겼어요. 한 번 더 말씀해 주세요. ("+e.message+")")}
+ $("busy").hidden=true;$("sendb").disabled=false}
+
+/* 진료 브리핑 카드 */
+const FIELDS=[["summary","증상"],["when","언제부터"],["where","어느 부위"],["severity","정도"],["details","자세한 모양"],["meds","먹고 있는 약"],["ask","의사 선생님께 묻고 싶은 것"]];
+function renderCard(){const c=S.get("card",null),box=$("cardbox");box.classList.remove("full");
+ if(!c){box.innerHTML="<p>아직 만든 카드가 없어요.</p><div class='btns'><button class='btn' onclick='startTalk()'>🎤 말로 알려주기</button></div>";return}
+ box.innerHTML=FIELDS.map(([k,l])=>`<b>${l}</b><div class="v" contenteditable="true" data-k="${k}">${esc(k==="ask"?(c.ask||[]).join("\n"):c[k])}</div>`).join("")+
+ `<p class="mute">${esc(c.date||"")} · 글자를 눌러 고칠 수 있어요.</p><div class="btns"><button class="btn" onclick="$('cardbox').classList.add('full');this.hidden=true;$('closeFull').hidden=false">👨‍⚕️ 의사 선생님께 보여드리기</button><button class="btn alt" onclick="say(readCard())">🔊 읽어주기</button></div><button class="btn alt" id="closeFull" hidden onclick="renderCard()">✕ 닫기</button>`;
+ box.querySelectorAll(".v").forEach(el=>el.onblur=()=>{const c2=S.get("card",{});const k=el.dataset.k,v=el.innerText.trim();c2[k]=k==="ask"?v.split("\n").filter(Boolean):v;S.set("card",c2)})}
+function readCard(){const c=S.get("card",{});return"증상은 "+(c.summary||"")+". 언제부터: "+(c.when||"")+". 부위는 "+(c.where||"")+"."}
+
+/* 처방전 스캔 */
+function shrink(f){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{const k=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",.82).split(",")[1])};img.onerror=rej;img.src=u})}
+async function scan(f){if(!f)return;$("rxbusy").hidden=false;$("rxout").innerHTML="";
+ try{showRx(await api({mode:"rx",image:await shrink(f)}))}catch(e){$("rxout").innerHTML="<div class='card'>사진을 읽지 못했어요. 밝은 곳에서 다시 찍어 주세요.<br><span class='mute'>"+esc(e.message)+"</span></div>"}
+ $("rxbusy").hidden=true;$("file").value=""}
+let pending=null;
+function showRx(d){pending=d;if(!d.readable){$("rxout").innerHTML="<div class='card'>약 정보를 읽지 못했어요. 글자가 잘 보이게 다시 찍어 주세요.</div>";return}
+ $("rxout").innerHTML="<h2>맞게 읽었는지 확인해 주세요</h2>"+d.drugs.map(x=>`<div class="card"><strong>${esc(x.name)}</strong> ${esc(x.dose)}<br>${(x.times||[]).map(t=>`<span class="chip">${t}</span>`).join("")} ${esc(x.timing)} ${x.days?"· "+esc(x.days)+"일":""}<br><span class="mute">${esc(x.note)}</span></div>`).join("")+
+ (d.warnings||[]).map(w=>`<p class="mute">⚠ ${esc(w)}</p>`).join("")+
+ "<div class='btns'><button class='btn ok' onclick='saveRx()'>맞아요, 약 시간표에 넣기</button><button class='btn alt' onclick=\"$('file').click()\">다시 찍기</button></div>"}
+function saveRx(){S.set("meds",pending.drugs);S.set("taken",{});go("meds")}
+
+/* 복약 알림 */
+const today=()=>new Date().toISOString().slice(0,10);
+function slotDoses(){const m=S.get("meds",[]),o={};m.forEach((d,i)=>(d.times||[]).forEach(t=>(o[t]=o[t]||[]).push({i,d})));return o}
+function firstSlot(){return SLOTS.find(s=>slotDoses()[s])}
+function renderMeds(){const o=slotDoses(),tk=S.get("taken",{}),box=$("medlist");
+ if(!Object.keys(o).length){box.innerHTML="<div class='card'>등록된 약이 없어요.<div class='btns'><button class='btn' onclick=\"go('rx')\">📷 처방전 찍기</button></div></div>";return}
+ box.innerHTML=SLOTS.filter(s=>o[s]).map(s=>`<div class="slot"><h3>${s} · ${TIMES[s]}</h3>`+o[s].map(({i,d})=>{const k=today()+"|"+i+"|"+s,st=tk[k];return`<div class="dose ${st==="y"?"done":""}"><strong>${esc(d.name)}</strong> ${esc(d.dose)} <span class="mute">${esc(d.timing)}</span><div class="btns"><button class="btn ok" onclick="mark('${k}','y')">✔ 먹었어요</button><button class="btn alt" onclick="mark('${k}','n')">아직이에요</button></div>${st==="y"?"<span class='chip'>먹었어요</span>":st==="n"?"<span class='chip'>조금 뒤 다시 알려드려요</span>":""}</div>`}).join("")+"</div>").join("")}
+function mark(k,v){const tk=S.get("taken",{});tk[k]=v;S.set("taken",tk);if(v==="n")lastRem[k.split("|")[2]]=Date.now()-20*60000;renderMeds()}
+const lastRem={};
+function remind(s,force){const r=$("remind");r.hidden=false;r.textContent="⏰ "+s+" 약 드실 시간이에요. 먹었는지 눌러 주세요.";say(s+" 약 드실 시간이에요.");lastRem[s]=Date.now();if(force)go("meds"),renderMeds(),$("remind").hidden=false}
+setInterval(()=>{const o=slotDoses(),tk=S.get("taken",{}),n=new Date(),min=n.getHours()*60+n.getMinutes();
+ SLOTS.forEach(s=>{if(!o[s])return;const [h,m]=TIMES[s].split(":").map(Number),t=h*60+m;if(min<t||min>t+180)return;
+  if(o[s].every(({i})=>tk[today()+"|"+i+"|"+s]==="y"))return;if(!lastRem[s]||Date.now()-lastRem[s]>=30*60000)remind(s)})},20000);
+go("home");
+</script>
+</body>
+</html>
